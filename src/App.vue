@@ -36,10 +36,13 @@ const isBoxPlayed = (box) => {
 
 const winner = ref()
 const playBox = (box) => {
+  if (winner.value) return
   if (isBoxPlayed(box)) {
     // you can't play that
     return
   }
+  if (isDraw.value) return
+
   currentPlayer.value.ownedBoxes.push(box)
   // check if game is done
   if (hasWon(currentPlayer.value)) {
@@ -56,12 +59,13 @@ const playBox = (box) => {
   }
 }
 
-const clickedByPlayerX = (box) => {
-  return playerX.ownedBoxes.find((ownedBox) => ownedBox === box)
-}
-const clickedByPlayerO = (box) => {
-  return playerO.ownedBoxes.find((ownedBox) => ownedBox === box)
-}
+const clickedByPlayerX = computed(() => {
+  return (box) => playerX.ownedBoxes.find((ownedBox) => ownedBox === box)
+})
+
+const clickedByPlayerO = computed(() => {
+  return (box) => playerO.ownedBoxes.find((ownedBox) => ownedBox === box)
+})
 
 const hasWon = (player) => {
   let result = false
@@ -70,6 +74,19 @@ const hasWon = (player) => {
       result = true
   })
   return result
+}
+
+const isDraw = computed(() => {
+  return ((playerX.ownedBoxes.length + playerO.ownedBoxes.length) === 9 && !winner.value)
+})
+
+const restart = () => {
+  playerX.turn = false
+  playerX.ownedBoxes = []
+  playerO.turn = true
+  playerO.ownedBoxes = []
+  currentPlayer.value = []
+  winner.value = null
 }
 </script>
 <template>
@@ -81,6 +98,18 @@ const hasWon = (player) => {
           styling="text-green-500 text-xl"
           :name="`${winner} won the game!`"
       />
+      <Title
+          v-show="isDraw"
+          styling="text-green-500 text-xl"
+          name="It's a Draw!"
+      />
+      <div class="w-full flex justify-center">
+        <button
+            v-show="winner || isDraw"
+            class="btn btn-accent"
+            @click="restart"
+        >Restart</button>
+      </div>
       <div class="tic-tac-toe grid-cols-3 grid grid-rows-3">
         <div
             v-for="box in 9"
@@ -89,8 +118,8 @@ const hasWon = (player) => {
             @click="playBox(box)"
             :class="{'opacity-50': winner}"
         >
-          <XMarkIcon v-show="clickedByPlayerX(box)"/>
-          <CheckIcon v-show="clickedByPlayerO(box)"/>
+          <XMarkIcon class="text-red-500" v-show="clickedByPlayerX(box)"/>
+          <CheckIcon class="text-amber-500" v-show="clickedByPlayerO(box)"/>
         </div>
       </div>
     </div>
